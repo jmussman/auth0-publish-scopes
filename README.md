@@ -48,7 +48,7 @@ This is an overview of the configuration that must be established.
 ### Steps
 
 1. Create or use an existing M2M application configuration that has delete:users permission in the Management API.
-2. Create a new post-login action using the code in the *auth0-block-idp-signup.js* file.
+2. Create a new post-login action using the code in the *auth0-publish-scopes.js* file.
 3. Add the *auth0* Node.js package as a dependency for the action.
 4. Add secrets for *domain*, *clientId*, and *clientSecret* using the values from the application in step 1.
 6. Save and deploy the action in the post-login flow.
