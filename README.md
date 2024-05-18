@@ -24,6 +24,10 @@ So the authorization server manages the permissions for a user, and ought to be 
 The easy way to do this is to add a claim to the ID token when it is requested, and then the application can learn what permissions the
 user is granted and ask for the specific permissions it wants from that set.
 
+This is one of a series of action examples that may be used as a foundation for building
+what you need.
+Search GitHub for *jmussman/auth0* to find other examples in the series.
+
 ## Implementation
 
 This implementation depends on *roles*.
