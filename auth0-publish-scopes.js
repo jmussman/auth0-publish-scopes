@@ -36,13 +36,23 @@
 
 exports.onExecutePostLogin = async (event, api) => {
 
+    const DEBUG = event.secrets.debug;
+
+    DEBUG ? console.log('auth0-publish-scopes') : null;
+
     // This only applies on requests resulting in an ID token.
 
     if (/^oidc-basic-profile|oidc-implicit-profile|oauth2-resource-owner-jwt-bearer|oauth2-password|oauth2-refresh-token|oidc-hybrid-profile$/.test(event.transaction.protocol)) {
 
+        const username = event.user.username ?? event.user.email;
+
+        DEBUG ? console.log(`auth0-publish-scopes will issue ID token for ${event.user.user_id} (${username})`) : null;
+
         let permissions = [];
 
         if (event.authorization?.roles) {
+        
+            DEBUG ? console.log(`Authorization roles found processing ${event.user.user_id} (${username})`) : null;
 
             // Split the application roles.
 
@@ -51,6 +61,8 @@ exports.onExecutePostLogin = async (event, api) => {
             // Filter the application roles by the user roles assigned.
 
             let xRoles = roles.filter(role => event.authorization?.roles.includes(role));
+        
+            DEBUG ? console.log(`Authorization roles found for user ${event.user.user_id} (${username}): ${JSON.stringify(xRoles)}`) : null;
 
             // Set up the connection to the management API (act as the management API client).
 
@@ -66,6 +78,8 @@ exports.onExecutePostLogin = async (event, api) => {
             try {
 
                 // Retrieve all the roles defined in the Auth0 tenant ('data' is an array of role objects).
+        
+                DEBUG ? console.log(`Connecting to management API for ${event.user.user_id} (${username})`) : null;
 
                 const allRoles = await management.roles.getAll();
 
@@ -87,9 +101,13 @@ exports.onExecutePostLogin = async (event, api) => {
 
                     permissions.push(...(rolePermissions.data.map(permission => permission.permission_name)));
                 }
+    
+                DEBUG ? console.log(`Calculated permissions for ${event.user.user_id} (${username}): ${JSON.stringify(permissions)}`) : null;
             }
 
             catch (e) {
+                        
+                DEBUG ? console.log(e) : null;
 
                 // Handle the error by returning the empty permission array. As an additional feature
                 // a claim could be inserted about the error, but do not leak information here.
@@ -99,6 +117,8 @@ exports.onExecutePostLogin = async (event, api) => {
         }
 
         // Insert the x-permissions claim; it will be an empty array if nothing was found.
+        
+        DEBUG ? console.log(`Setting custom claim x-permissions for ${event.user.user_id} (${username})`) : null;
 
         api.idToken.setCustomClaim('x-permissions', permissions);
     }
