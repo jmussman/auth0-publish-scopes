@@ -23,6 +23,13 @@ That is the reason that applications request specific scopes.
 So the authorization server manages the permissions for a user, and ought to be able to tell the application what scopes are authorized to be granted for that specific user.
 The easy way to do this is to add a claim to the ID token when it is requested, and then the application can learn what permissions the
 user is granted and ask for the specific permissions it wants from that set.
+This of course requires two round-trips to the authorization server, one to pick up the ID token, and the second to pick up an API access
+token with the necessary permissions.
+An example of doing the two-step for a SPA is located in the project [Auth0-Pyrates-SPA](https://jmussman/auth0-pyrates-spa).
+
+Building on top of that, if the application gets the list of what permissions the user actually has, it can use that information
+to limit what the user can see in the application.
+The API access token may not be what the application focus is on.
 
 This is one of a series of action examples that may be used as a foundation for building
 what you need.
@@ -58,6 +65,29 @@ This is an overview of the configuration that must be established.
 5. Add a secret *debug* with a value of true for console messages during testing, clear it for production. A re-deployment is neccessary after changing a secret.
 6. Save and deploy the action in the post-login flow.
 
+## Unit Tests
+
+Auth0 flow actions provide a rduimentary mechanism for testing.
+The custom database actions do not provide a testing feature.
+All actions can be monitored for console output using the *Realtime WebTask Logs Extension* in the Auth0 tenant.
+When launched by clicking the extension, consent must be provided for it to access the console.
+All messages written to console.log will be visible here; a strong recommendation is to only use this in the development sandbox or there will be too many
+messages to wade through.
+
+The flow actions testing mechanism allows a mock event to be edited and then the action tested.
+Unfortunately, the only way to managem multiple tests with any success is to manage different event configurations outside of the console,
+and then paste them in turn to perform tests.
+
+Any significant action must have all possible paths of execution checked, with both positive and negative configurations.
+There is no reason that the event and api objects cannot be mocked, and actions tested, outside of Auth0.
+As an example of how to do with for a action this project has a full suite of unit tests, written in *Vitest*, with a high percentage of code-coverage.
+Vitest performs much better than Jest at asynchromous testing, which is often the case with an action.
+
+At the command line in the project folder:
+
+* Execute *npm install* to add the Vitest packages.
+* Run *npm test* to run all the unit tests
+* Run *npm run test-coverage* to run the test suite with code-coverage (currently at 100%).
 
 ## License
 

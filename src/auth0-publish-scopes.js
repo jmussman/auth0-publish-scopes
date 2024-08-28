@@ -1,5 +1,5 @@
 /**
- * auth0-publish-scopes
+ * auth0-publish-scopes.js
  * Copyright © 2024 Joel A Mussman. All rights reserved.
  * 
  * This Action code is released under the MIT license and is free to copy and modify as
@@ -49,33 +49,52 @@ exports.onExecutePostLogin = async (event, api) => {
         DEBUG ? console.log(`auth0-publish-scopes will issue ID token for ${event.user.user_id} (${username})`) : null;
 
         let permissions = [];
+        let authorizationRoles = event.authorization?.roles ?? []
 
-        if (event.authorization?.roles) {
-        
-            DEBUG ? console.log(`Authorization roles found processing ${event.user.user_id} (${username})`) : null;
+        for (let i = authorizationRoles.length - 1; i >= 0; --i) {
 
-            // Split the application roles.
+            authorizationRoles[i] = authorizationRoles[i].trim()
 
-            let roles = event.client.metadata['roles'].split(',').map(role => role.trim());
+            if (!authorizationRoles[i]) {
 
-            // Filter the application roles by the user roles assigned.
+                authorizationRoles.splice(i, 1)
+            }
+        }
 
-            let xRoles = roles.filter(role => event.authorization?.roles.includes(role));
-        
-            DEBUG ? console.log(`Authorization roles found for user ${event.user.user_id} (${username}): ${JSON.stringify(xRoles)}`) : null;
+        let clientRoles = event.client.metadata['roles']?.split(',') ?? []
 
-            // Set up the connection to the management API (act as the management API client).
+        for (let i = clientRoles.length - 1; i >= 0; --i) {
 
-            const ManagementClient = require('auth0').ManagementClient;
+            clientRoles[i] = clientRoles[i].trim()
 
-            const management = new ManagementClient({
+            if (!clientRoles[i]) {
 
-                domain: event.secrets.domain,
-                clientId: event.secrets.clientId,
-                clientSecret: event.secrets.clientSecret,
-            });
+                clientRoles.splice(i, 1)
+            }
+        }
+
+        if (authorizationRoles.length && clientRoles.length) {
 
             try {
+        
+                DEBUG ? console.log(`Authorization roles found processing ${event.user.user_id} (${username})`) : null;
+    
+                // Filter the application roles by the user roles assigned.
+    
+                let filteredRoles = clientRoles.filter(role => authorizationRoles.includes(role));
+            
+                DEBUG ? console.log(`Authorization roles found for user ${event.user.user_id} (${username}): ${JSON.stringify(filteredRoles)}`) : null;
+    
+                // Set up the connection to the management API (act as the management API client).
+
+                const ManagementClient = require('auth0').ManagementClient;
+
+                const management = new ManagementClient({
+
+                    domain: event.secrets.domain,
+                    clientId: event.secrets.clientId,
+                    clientSecret: event.secrets.clientSecret,
+                });
 
                 // Retrieve all the roles defined in the Auth0 tenant ('data' is an array of role objects).
         
@@ -83,25 +102,28 @@ exports.onExecutePostLogin = async (event, api) => {
 
                 const allRoles = await management.roles.getAll();
 
-                // Filter the roles against list of names in xRoles.
+                // Filter the all the roles against list of names in filteredRoles.
 
-                const filteredRoles = allRoles.data.filter(role => xRoles.includes(role.name));
+                filteredRoles = allRoles.data.filter(role => filteredRoles.includes(role.name));
 
-                // Extract the id of each role.
+                if (filteredRoles.length) {
+                        
+                    // Extract the id of each role.
 
-                const roleIds = filteredRoles.map(role => role.id);
+                    const roleIds = filteredRoles.map(role => role.id);
 
-                // Walk each role and get the permissions; append to the list of permissions.
+                    // Walk each role and get the permissions; append to the list of permissions.
 
-                for (let roleId of roleIds) {
+                    for (let roleId of roleIds) {
 
-                    // 'data' is an array of permission objects.
+                        // 'data' is an array of permission objects.
 
-                    const rolePermissions = await management.roles.getPermissions({ id: roleId });
+                        const rolePermissions = await management.roles.getPermissions({ id: roleId });
 
-                    permissions.push(...(rolePermissions.data.map(permission => permission.permission_name)));
+                        permissions.push(...(rolePermissions.data.map(permission => permission.permission_name)));
+                    }
                 }
-    
+
                 DEBUG ? console.log(`Calculated permissions for ${event.user.user_id} (${username}): ${JSON.stringify(permissions)}`) : null;
             }
 
@@ -109,17 +131,24 @@ exports.onExecutePostLogin = async (event, api) => {
                         
                 DEBUG ? console.log(e) : null;
 
-                // Handle the error by returning the empty permission array. As an additional feature
-                // a claim could be inserted about the error, but do not leak information here.
-
-                // api.idToken.setCustomClaim('x-permissionsfail', e);
+                throw e;
             }
         }
 
         // Insert the x-permissions claim; it will be an empty array if nothing was found.
         
-        DEBUG ? console.log(`Setting custom claim x-permissions for ${event.user.user_id} (${username})`) : null;
+        try {
 
-        api.idToken.setCustomClaim('x-permissions', permissions);
+            DEBUG ? console.log(`Setting custom claim x-permissions for ${event.user.user_id} (${username})`) : null;
+
+            api.idToken.setCustomClaim('x-permissions', permissions);
+        }
+
+        catch (e) {
+
+            DEBUG ? console.log(e) : null;
+
+            throw e;
+        }
     }
 }
