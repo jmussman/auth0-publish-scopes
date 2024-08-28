@@ -43,8 +43,8 @@ exports.onExecutePostLogin = async (event, api) => {
     // This only applies on requests resulting in an ID token.
 
     if (/^oidc-basic-profile|oidc-implicit-profile|oauth2-resource-owner-jwt-bearer|oauth2-password|oauth2-refresh-token|oidc-hybrid-profile$/.test(event.transaction.protocol)) {
-
-        const username = event.user.username ?? event.user.email;
+            
+        const username = event.user.username?.trim() ? event.user.username.trim() : event.user.email;
 
         DEBUG ? console.log(`auth0-publish-scopes will issue ID token for ${event.user.user_id} (${username})`) : null;
 

@@ -188,6 +188,63 @@ describe('Action tests', async () => {
         expect(ctor).not.toHaveBeenCalled()
     })
 
+    it('Selects email when username is undefined', async () => {
+
+        mocks.eventMock.transaction.protocol = 'oidc-basic-profile'
+        mocks.eventMock.user.email = 'calicojack@pyrates.live'
+        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82',
+
+        delete mocks.eventMock.user.username
+
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+
+        // Check the console log that we showed the correct value.
+
+        expect(consoleLogMock).toHaveBeenCalledWith(expect.stringContaining(mocks.eventMock.user.email))
+    })
+
+    it('Selects email when username is empty', async () => {
+
+        mocks.eventMock.transaction.protocol = 'oidc-basic-profile'
+        mocks.eventMock.user.username = ''
+        mocks.eventMock.user.email = 'calicojack@pyrates.live'
+        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82',
+
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+
+        // Check the console log that we showed the correct value.
+
+        expect(consoleLogMock).toHaveBeenCalledWith(expect.stringContaining(mocks.eventMock.user.email))
+    })
+
+    it('Selects email when username is blank', async () => {
+
+        mocks.eventMock.transaction.protocol = 'oidc-basic-profile'
+        mocks.eventMock.user.username = '     '
+        mocks.eventMock.user.email = 'calicojack@pyrates.live'
+        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82',
+
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+
+        // Check the console log that we showed the correct value.
+
+        expect(consoleLogMock).toHaveBeenCalledWith(expect.stringContaining(mocks.eventMock.user.email))
+    })
+
+    it('Selects username over email', async () => {
+
+        mocks.eventMock.transaction.protocol = 'oidc-basic-profile'
+        mocks.eventMock.user.username = 'blackbeard@pyrates.live'
+        mocks.eventMock.user.email = 'calicojack@pyrates.live'
+        mocks.eventMock.user.user_id = 'auth0|5f7c8ec7c33c6c004bbafe82',
+
+        await onExecutePostLogin(mocks.eventMock, mocks.apiMock)
+
+        // Check the console log that we showed the correct value.
+
+        expect(consoleLogMock).toHaveBeenCalledWith(expect.stringContaining('blackbeard@pyrates.live'))
+    })
+
     it('Ignores resolving scopes if the user has no authorization roles', async () => {
 
         mocks.eventMock.transaction.protocol = 'oidc-basic-profile'
