@@ -141,7 +141,7 @@ exports.onExecutePostLogin = async (event, api) => {
 
             DEBUG ? console.log(`Setting custom claim x-permissions for ${event.user.user_id} (${username})`) : null;
 
-            api.idToken.setCustomClaim('x-permissions', permissions);
+            await api.idToken.setCustomClaim('x-permissions', permissions);
         }
 
         catch (e) {
